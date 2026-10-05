@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Databricks / local
+.databricks/
+*.log
+
+# Deploy config + generated ids (workspace-specific)
+deploy/config.env
+deploy/.state.env

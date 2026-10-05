@@ -1,0 +1,223 @@
+/* ============================================================
+   Databricks Brand Report Theme
+   DM Sans font + official color palette for PDF reports
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap');
+
+/* ---- Page layout ---- */
+@page {
+  size: A4;
+  margin: 2cm 2.5cm;
+
+  @bottom-right {
+    content: counter(page);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9pt;
+    color: #618794;
+  }
+}
+
+/* ---- CSS variables ---- */
+:root {
+  --db-dark:       #1B3139;
+  --db-dark-mid:   #143D4A;
+  --db-teal:       #1B5162;
+  --db-teal-muted: #618794;
+  --db-light:      #F5F3F0;
+  --db-accent:     #FF3621;
+  --db-green:      #00A972;
+  --db-amber:      #FFAB00;
+  --db-red:        #FF3621;
+  --db-rose:       #98102A;
+  --db-border:     #C4CCD6;
+  --db-bg-alt:     #F5F3F0;
+}
+
+/* ---- Base typography ---- */
+html, body {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11pt;
+  line-height: 1.55;
+  color: var(--db-dark);
+  background: #FFFFFF;
+}
+
+/* ---- Headings ---- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'DM Sans', sans-serif;
+  page-break-after: avoid;
+  margin-top: 1.4em;
+  margin-bottom: 0.4em;
+}
+
+h1 {
+  font-size: 22pt;
+  font-weight: 700;
+  color: var(--db-dark);
+  border-bottom: 3px solid var(--db-accent);
+  padding-bottom: 0.25em;
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 16pt;
+  font-weight: 700;
+  color: var(--db-dark);
+  border-bottom: 1px solid var(--db-border);
+  padding-bottom: 0.2em;
+}
+
+h3 {
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--db-teal);
+}
+
+h4 {
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--db-teal);
+}
+
+h5, h6 {
+  font-size: 10pt;
+  font-weight: 500;
+  color: var(--db-teal-muted);
+}
+
+/* ---- Paragraphs & inline ---- */
+p {
+  margin: 0.5em 0;
+}
+
+strong {
+  font-weight: 700;
+}
+
+a {
+  color: var(--db-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ---- Code ---- */
+code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 9.5pt;
+  background: var(--db-bg-alt);
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+}
+
+pre {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 9.5pt;
+  background: var(--db-bg-alt);
+  border-left: 3px solid var(--db-teal);
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  page-break-inside: avoid;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+/* ---- Tables ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 10pt;
+  page-break-inside: auto;
+}
+
+thead tr {
+  background: var(--db-dark);
+  color: #FFFFFF;
+}
+
+th {
+  font-weight: 700;
+  text-align: left;
+  padding: 0.55em 0.75em;
+  border: 1px solid var(--db-dark-mid);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+td {
+  padding: 0.45em 0.75em;
+  border: 1px solid var(--db-border);
+}
+
+tbody tr:nth-child(even) {
+  background: var(--db-bg-alt);
+}
+
+/* ---- Lists ---- */
+ul, ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+li {
+  margin-bottom: 0.25em;
+}
+
+/* ---- Blockquotes ---- */
+blockquote {
+  border-left: 3px solid var(--db-teal-muted);
+  margin: 0.8em 0;
+  padding: 0.4em 1em;
+  color: var(--db-teal);
+  background: var(--db-bg-alt);
+}
+
+/* ---- Horizontal rules ---- */
+hr {
+  border: none;
+  border-top: 1px solid var(--db-border);
+  margin: 1.5em 0;
+}
+
+/* ---- Signal status utility classes ---- */
+.signal-positive, .status-green {
+  color: var(--db-green);
+  font-weight: 700;
+}
+
+.signal-negative, .status-red {
+  color: var(--db-red);
+  font-weight: 700;
+}
+
+.signal-warning, .status-amber {
+  color: var(--db-amber);
+  font-weight: 700;
+}
+
+/* --- AI Parts Wizard PDF fit overrides --- */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.2em auto;      /* center + breathing room around the architecture diagram */
+}
+pre, code {
+  white-space: pre-wrap;   /* wrap long code/SQL lines instead of overflowing the page */
+  word-break: break-word;
+}
+table {
+  max-width: 100%;
+}
+td, th {
+  word-break: break-word;  /* keep wide table cells inside the page */
+  overflow-wrap: anywhere;
+}

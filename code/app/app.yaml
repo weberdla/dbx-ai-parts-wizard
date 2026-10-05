@@ -1,0 +1,17 @@
+# Template: deploy/deploy.sh renders the __PLACEHOLDERS__ into a staged copy at deploy time.
+command: ['uvicorn', 'app:app', '--host', '0.0.0.0', '--port', '8000']
+env:
+  - name: 'PGHOST'
+    value: '__PGHOST__'
+  - name: 'PGPORT'
+    value: '5432'
+  - name: 'PGDATABASE'
+    value: '__PGDATABASE__'
+  - name: 'PGSSLMODE'
+    value: 'require'
+  - name: 'PGUSER'
+    value: '__APP_SP_CLIENT_ID__'
+  - name: 'ENDPOINT_NAME'
+    value: '__ENDPOINT_NAME__'
+  - name: 'GENIE_SPACE_ID'
+    value: '__GENIE_SPACE_ID__'

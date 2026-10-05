@@ -1,0 +1,43 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#f9f9f9', 'primaryTextColor': '#222', 'primaryBorderColor': '#aaa', 'lineColor': '#555', 'clusterBkg': '#f5f7fa', 'clusterBorder': '#cccccc', 'titleColor': '#333', 'edgeLabelBackground': '#fff', 'fontFamily': 'Helvetica, Arial, sans-serif', 'fontSize': '14px'}}}%%
+flowchart TD
+    classDef source fill:#e8f5e9,stroke:#4caf50,color:#1b5e20,font-weight:bold
+    classDef delta fill:#FF3621,stroke:#b71c1c,color:#ffffff,font-weight:bold
+    classDef vector fill:#ff7043,stroke:#bf360c,color:#ffffff
+    classDef pipeline fill:#ffd54f,stroke:#f57f17,color:#1a1a1a
+    classDef lakebase fill:#1B3A4B,stroke:#0d2333,color:#ffffff,font-weight:bold
+    classDef webapp fill:#1565c0,stroke:#0d47a1,color:#ffffff
+    classDef dashboards fill:#546e7a,stroke:#263238,color:#ffffff
+    classDef genie fill:#4a148c,stroke:#311b92,color:#ffffff
+
+    N1["Source Part Catalogs<br/>(4 plants)"]:::source
+
+    subgraph LH["  Lakehouse / Delta Tier  "]
+        direction TB
+        N2["Unity Catalog — Delta<br/><b>master:</b> parts, plants, models, suppliers, supplier_catalogs<br/><b>gold:</b> match_groups, match_group_members, normalized_parts, review_state"]:::delta
+        N3["Mosaic AI Vector Search<br/>(KNN · L2 distance · category × material blocks)"]:::vector
+        N4["Matching Pipeline<br/>(block · score savings · stable group_id)"]:::pipeline
+    end
+
+    subgraph SA["  Serving / App Tier  "]
+        direction TB
+        N5["Lakebase (Postgres)<br/>app serving + review state"]:::lakebase
+        N6["Databricks Web App<br/>(React + FastAPI, embeds Genie chat)"]:::webapp
+    end
+
+    subgraph CN["  Consumption  "]
+        direction LR
+        N7["AI/BI Dashboards<br/>(savings, gaps, engine quality)"]:::dashboards
+        N8["Genie Agent<br/>(natural-language queries)"]:::genie
+    end
+
+    N1 -->|"ingest"| N2
+    N2 -->|"feature build + embed"| N3
+    N3 --> N4
+    N4 -->|"match facts (system of record)"| N2
+    N2 -->|"facts sync (Delta to Lakebase)"| N5
+    N5 -->|"reverse sync review state (hourly + pre-run)"| N2
+    N5 -->|"reads"| N6
+    N6 -->|"review writes"| N5
+    N2 -->|"all-Delta reads"| N7
+    N2 -->|"all-Delta reads"| N8
+    N6 -->|"embeds chat"| N8

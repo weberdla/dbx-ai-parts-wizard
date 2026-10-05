@@ -1,0 +1,11 @@
+{
+  "name": "__CATALOG__.__SCHEMA__.part_features_vs_index",
+  "endpoint_name": "apw-vs",
+  "primary_key": "part_id",
+  "index_type": "DELTA_SYNC",
+  "delta_sync_index_spec": {
+    "source_table": "__CATALOG__.__SCHEMA__.gold_part_features",
+    "pipeline_type": "TRIGGERED",
+    "embedding_vector_columns": [{"name": "feature_vector", "embedding_dimension": 21}]
+  }
+}
