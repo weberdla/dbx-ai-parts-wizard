@@ -50,21 +50,6 @@ See **[`DEPLOY.md`](DEPLOY.md)** for prerequisites, what each step does, and how
 | [`code/`](code/) | Implementation — see [`code/README.md`](code/README.md). |
 | [`screenshots/`](screenshots/) | App screenshots. |
 
-## Regenerating the spec artifacts
-
-`ai-parts-wizard-spec.md` is **governing**. The PDF and diagram images are generated from it —
-edit the `.md` first, then regenerate.
-
-**PDF** — `build_pdf.py` (WeasyPrint; on Apple Silicon it needs the Homebrew lib path). It
-uses `assets/pdf.css` and deliberately omits the `nl2br` Markdown extension, because the spec
-is hard-wrapped at ~90 columns:
-
-```bash
-DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib python3 build_pdf.py
-```
-
-**Diagram** — edit `assets/architecture.mmd` and re-render with `mmdc` (mermaid-cli).
-
 ## License
 
 [MIT](LICENSE)
