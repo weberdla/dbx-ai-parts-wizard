@@ -105,3 +105,58 @@ export async function setNormalize(
     })
   );
 }
+
+// ---- v2 3D view ----
+import type { BlockInfo, CloseupResponse, LocateResponse, NeighborsResponse, ProjectionPayload } from './components/viz/types';
+
+export async function getBlocks(): Promise<BlockInfo[]> {
+  return json(await fetch('/api/viz/blocks'));
+}
+
+export async function getProjection(
+  scope: 'global' | 'block',
+  blockKey: string | undefined,
+  method: 'umap' | 'pca'
+): Promise<ProjectionPayload> {
+  const p = new URLSearchParams({ scope, method });
+  if (blockKey) p.set('block_key', blockKey);
+  return json(await fetch(`/api/viz/projection?${p.toString()}`));
+}
+
+export async function getNeighbors(partId: string, k = 10): Promise<NeighborsResponse> {
+  return json(await fetch(`/api/viz/parts/${encodeURIComponent(partId)}/neighbors?k=${k}`));
+}
+
+export async function locateOnMap(req: {
+  group_ids?: string[];
+  part_ids?: string[];
+  part_numbers?: string[];
+}): Promise<LocateResponse> {
+  return json(
+    await fetch('/api/viz/locate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    })
+  );
+}
+
+export async function getCloseup(groupId: string, k = 6): Promise<CloseupResponse> {
+  return json(await fetch(`/api/viz/groups/${encodeURIComponent(groupId)}/closeup?k=${k}`));
+}
+
+export interface Summary {
+  parts: number;
+  identified_groups: number;
+  identified_savings: number;
+  parts_in_groups: number;
+  validated_groups: number;
+  validated_savings: number;
+  reviewers: number;
+  last_validated_at: string | null;
+  links?: { dashboard?: string; catalog?: string };
+}
+
+export async function getSummary(): Promise<Summary> {
+  return json(await fetch('/api/summary'));
+}

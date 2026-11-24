@@ -12,7 +12,7 @@ Databricks CLI. Every step is re-runnable; IDs it creates are remembered in
   create a catalog).
 - Serverless compute for notebooks/jobs, and a SQL warehouse (serverless recommended).
 - **Lakebase Autoscaling** (Postgres), **Databricks Apps**, **Genie** and **AI/BI dashboards**
-  enabled. Vector Search is only needed for the optional `vector-search` step.
+  enabled, plus **Vector Search** (the Similarity Map queries it for live nearest neighbors).
 - Permission to create apps and Lakebase projects, and to grant on the catalog/schema and
   warehouse (the app's service principal is granted read access for Genie).
 
@@ -40,7 +40,7 @@ cp deploy/config.env.example deploy/config.env
 | `WORKSPACE_DIR` | Workspace folder for notebooks, app source, Genie space and dashboard. Default `/Workspace/Users/<you>/ai_parts_wizard`. |
 | `LAKEBASE_PROJECT` / `PGDATABASE` | Lakebase project (created if missing) and serving database (default `apw`). |
 | `APP_NAME` | Databricks App name. |
-| `VS_ENDPOINT` | Vector Search endpoint for the optional index. |
+| `VS_ENDPOINT` | Vector Search endpoint for the part-vector index (created if missing). |
 
 ## Deploy
 
@@ -48,7 +48,7 @@ cp deploy/config.env.example deploy/config.env
 deploy/deploy.sh all
 ```
 
-Expect about **30–60 minutes** end to end, mostly waiting on serverless jobs. That runs these
+Expect about **45–75 minutes** end to end, mostly waiting on serverless jobs. That runs these
 steps in order (you can also run any of them on their own, e.g.
 `deploy/deploy.sh genie app`):
 
@@ -58,15 +58,17 @@ steps in order (you can also run any of them on their own, e.g.
 | `data` | Runs, as serverless jobs: schema + tables → synthetic data (~200K parts) → batch matcher → evaluation. | ~20–45 min (the matcher alone is ~15–30 min) |
 | `lakebase` | Creates the Lakebase project (if missing) and the serving database. | a few min |
 | `app-setup` | Creates the app (and its service principal), attaches the database as an app resource, creates the SP's Postgres role, creates the review tables + grants ([`code/serving/lakebase_setup.sql`](code/serving/lakebase_setup.sql)), and grants the SP `USE CATALOG` / `USE SCHEMA` / `SELECT` and warehouse `CAN_USE`. | a few min |
-| `sync` | Copies review state Lakebase → Delta (creates `gold_review_dispositions` on first run), then match facts Delta → Lakebase for the app. | ~5 min |
+| `vector-search` | Creates the Vector Search endpoint (if missing) and a Delta Sync index over `gold_part_features`. | ~10 min (endpoint + first sync) |
+| `projection` | Runs `build_projection` as a serverless job: 3D UMAP + PCA of the part vectors, for a capped whole-catalog sample and per `(category, material)` block → `gold_part_projection`, `gold_part_viz_attrs`. | ~8–10 min |
+| `sync` | Copies review state Lakebase → Delta (creates `gold_review_dispositions` on first run), then match facts (and the projection tables) Delta → Lakebase for the app. | ~5 min |
 | `genie` | Creates (or updates) the Genie space and grants the app `CAN_RUN`. | seconds |
 | `app` | Renders `code/app/app.yaml` with your Lakebase host / SP / Genie space, uploads the app and deploys it. Prints the **app URL**. | a few min |
 | `dashboard` | Creates (or updates) and publishes the dashboard. Prints the **dashboard URL**. | seconds |
 
-Optional:
+Before a demo run:
 
 ```bash
-deploy/deploy.sh vector-search   # Vector Search endpoint + Delta Sync index over gold_part_features
+deploy/deploy.sh demo-reset   # clear review state (approvals) so the decision strip starts at $0 validated
 ```
 
 Open the app URL and you should see ~25K match groups in the queue, sorted by annual
@@ -80,6 +82,9 @@ savings (~$36M/yr in total).
 - **Rebuild from scratch** — `deploy/deploy.sh data sync` regenerates the synthetic catalog,
   re-runs matching and evaluation, and refreshes Lakebase. Review state in Lakebase is kept;
   group ids are content-derived, so reviews still apply to unchanged groups.
+- **Re-run the projection** (e.g. after `data`, or to try other UMAP settings) —
+  `deploy/deploy.sh projection sync app`. The `deterministic` notebook widget pins UMAP's seed
+  (slower: single-threaded) so the picture is identical on every run.
 - **Change the UI** — `cd code/app/frontend && npm ci && npm run build`, then
   `deploy/deploy.sh app`.
 - **Local app dev** — see [`code/app/README.md`](code/app/README.md).

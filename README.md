@@ -14,16 +14,22 @@ duplicates and ground-truth labels).
 
 ![Match queue](screenshots/01-match-queue.png)
 
+![Similarity Map: a match group close-up](screenshots/05-group-closeup.png)
+
 ## What gets deployed
 
 - **Delta tables** in Unity Catalog (`<catalog>.ai_parts_wizard`) — master data, features,
   match groups, evaluation metrics.
 - **Lakebase** (Postgres) — low-latency serving copies + review state written by the app.
 - **Databricks App** (React + FastAPI) — Match Queue, Group Detail (supplier price gaps,
-  dispositions, enterprise part-number assignment) and a docked **Ask Genie** panel.
+  dispositions, enterprise part-number assignment), an **Ask Genie** drawer, and a 3D
+  **Similarity Map** of the part vectors (whole catalog → one block → a true-distance close-up of
+  a single match group, with live Vector Search neighbors). A decision strip frames the flow:
+  ask → AI identifies → people validate → value quantified.
 - **Genie space** — natural-language Q&A over the catalog.
 - **AI/BI dashboard** — business benefit (savings) + matching-engine quality.
-- *(optional)* **Vector Search** endpoint + index for online "find similar".
+- **Vector Search** endpoint + index over the part vectors (live nearest neighbors in the map).
+- **3D projection** (UMAP + PCA) of the part vectors, precomputed by a serverless job.
 
 ## Quick start
 

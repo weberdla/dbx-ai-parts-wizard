@@ -306,3 +306,46 @@ async def set_normalize(group_id: str, body: NormalizeBody, request: Request):
     return {"group_id": group_id,
             "enterprise_part_number": body.enterprise_part_number.strip(),
             "assigned_by": assigned_by, "assigned_at": now.isoformat()}
+
+
+@router.get("/summary")
+async def summary():
+    """Totals for the decision strip: identified (AI) vs validated (people) value."""
+    tot = await db.fetch(
+        "SELECT count(*) AS groups, COALESCE(sum(savings_potential), 0) AS savings, "
+        "COALESCE(sum(member_count), 0) AS parts_in_groups FROM match_groups"
+    )
+    parts = await db.fetch("SELECT count(*) AS n FROM part_viz_attrs")
+    val = await db.fetch(
+        """
+        SELECT count(*) AS groups, COALESCE(sum(mg.savings_potential), 0) AS savings,
+               count(DISTINCT rd.reviewer) AS reviewers,
+               max(rd.updated_at) AS last_at
+        FROM review_dispositions rd JOIN match_groups mg ON mg.group_id = rd.group_id
+        WHERE rd.status = 'consolidated'
+        """
+    )
+    t, v = tot[0], val[0]
+    links = {}
+    try:
+        import os
+        from . import config
+        host = (os.environ.get("DATABRICKS_HOST") or config.get_workspace_client().config.host or "").rstrip("/")
+        if host and not host.startswith("http"):
+            host = "https://" + host
+        if os.environ.get("DASHBOARD_ID"):
+            links["dashboard"] = f"{host}/dashboardsv3/{os.environ['DASHBOARD_ID']}/published"
+        if os.environ.get("UC_SCHEMA"):
+            cat, sch = os.environ["UC_SCHEMA"].split(".", 1)
+            links["catalog"] = f"{host}/explore/data/{cat}/{sch}"
+    except Exception:
+        pass
+    return {
+        "links": links,
+        "parts": parts[0]["n"],
+        "identified_groups": t["groups"], "identified_savings": float(t["savings"]),
+        "parts_in_groups": t["parts_in_groups"],
+        "validated_groups": v["groups"], "validated_savings": float(v["savings"]),
+        "reviewers": v["reviewers"],
+        "last_validated_at": v["last_at"].isoformat() if v["last_at"] else None,
+    }

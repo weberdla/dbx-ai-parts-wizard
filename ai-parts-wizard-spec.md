@@ -756,9 +756,9 @@ These encode the design decisions most likely to break silently:
 
 All 8 phases are built and deployed (v1.0). Optional enhancements, none blocking the demo:
 
-1. **Vector Search "find similar" in the app.** Wire the `part_features_vs_index` (endpoint
-   `apw-vs`) into the app so a Group Detail / part view offers live per-part nearest-neighbor
-   lookups (§9.1). The index exists; only the app feature is unbuilt.
+1. **Vector Search "find similar" in the app.** *Built (v2):* the Similarity Map queries
+   `part_features_vs_index` for live per-part and per-group nearest neighbors (§9.1), shown in a 3D
+   projection of the part vectors and a true-distance group close-up. See `code/app/README.md`.
 2. **Richer Genie tuning.** Add curated **example SQL** and **benchmark questions** to the
    Genie space via the UI (the builder helper can't emit sorted-id examples / answered
    benchmarks — §8), and consider metric views for common rollups.

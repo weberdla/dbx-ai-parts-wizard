@@ -4,6 +4,7 @@ interface Props {
   rows: QueueRow[];
   loading: boolean;
   onOpen: (groupId: string) => void;
+  onShowOnMap: (row: QueueRow) => void;
 }
 
 const money = (n: number) =>
@@ -22,7 +23,7 @@ function Spans({ row }: { row: QueueRow }) {
   );
 }
 
-export default function MatchQueue({ rows, loading, onOpen }: Props) {
+export default function MatchQueue({ rows, loading, onOpen, onShowOnMap }: Props) {
   if (loading) return <div className="loading">Loading match queue…</div>;
   if (!rows.length) return <div className="empty">No match groups for these filters.</div>;
 
@@ -38,6 +39,7 @@ export default function MatchQueue({ rows, loading, onOpen }: Props) {
             <th className="num">Avg sim.</th>
             <th className="num">Annual savings</th>
             <th>Status</th>
+            <th className="maptd" />
           </tr>
         </thead>
         <tbody>
@@ -54,6 +56,15 @@ export default function MatchQueue({ rows, loading, onOpen }: Props) {
               <td>
                 <Chip status={r.status} />
                 {r.normalized && <span className="badge-norm">NORM</span>}
+              </td>
+              <td className="maptd">
+                <button
+                  className="map-pin"
+                  title="Show on Similarity Map"
+                  onClick={(e) => { e.stopPropagation(); onShowOnMap(r); }}
+                >
+                  ◎
+                </button>
               </td>
             </tr>
           ))}

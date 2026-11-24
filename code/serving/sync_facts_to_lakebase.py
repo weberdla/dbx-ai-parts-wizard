@@ -85,4 +85,20 @@ print("supplier_offers synced:", offers.count())
 
 # COMMAND ----------
 
+# MAGIC %md ## part_projection + part_viz_attrs — v2 3D view (only if the projection step has run)
+
+# COMMAND ----------
+
+if spark.catalog.tableExists(f"{FQ}.gold_part_projection"):
+    proj = spark.table(f"{FQ}.gold_part_projection")
+    write_pg(proj, "part_projection")
+    print("part_projection synced:", proj.count())
+    va = spark.table(f"{FQ}.gold_part_viz_attrs")
+    write_pg(va, "part_viz_attrs")
+    print("part_viz_attrs synced:", va.count())
+else:
+    print("gold_part_projection not found - skipping v2 projection sync (run deploy.sh projection).")
+
+# COMMAND ----------
+
 print("Facts sync complete.")

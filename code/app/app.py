@@ -7,11 +7,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from server.db import db
 from server.routes import router
+from server.viz import router as viz_router
 
 FRONTEND_DIST = Path(__file__).parent / "frontend" / "dist"
 
@@ -28,7 +30,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="AI Parts Wizard", lifespan=lifespan)
+# Projection payloads are large columnar JSON; gzip cuts them ~3-4x.
+app.add_middleware(GZipMiddleware, minimum_size=2048)
 app.include_router(router)
+app.include_router(viz_router)
 
 
 @app.get("/healthz")

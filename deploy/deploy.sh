@@ -4,8 +4,8 @@
 # Usage:  deploy/deploy.sh all              # full deploy, in order
 #         deploy/deploy.sh <step> [step...]  # run individual steps
 #
-# Steps (in order): notebooks data lakebase app-setup sync genie app dashboard
-# Extras:           vector-search  (optional online "find similar" index)
+# Steps (in order): notebooks data lakebase app-setup vector-search projection sync genie app dashboard
+# Extras:           demo-reset     (clear review state before a demo run; re-syncs)
 #
 # Every step is safe to re-run. IDs created along the way (app service principal,
 # Genie space, dashboard) are kept in deploy/.state.env (gitignored).
@@ -57,6 +57,7 @@ render() {
       -e "s|__APP_SP_CLIENT_ID__|${APP_SP_CLIENT_ID:-}|g" \
       -e "s|__ENDPOINT_NAME__|${ENDPOINT_NAME:-}|g" \
       -e "s|__GENIE_SPACE_ID__|${GENIE_SPACE_ID:-}|g" \
+      -e "s|__DASHBOARD_ID__|${DASHBOARD_ID:-}|g" \
       "$1"
 }
 
@@ -106,6 +107,7 @@ step_notebooks() {
   local f
   for f in data_model/create_schema_and_tables data_generation/generate_sample_data \
            matching/build_matches matching/evaluate_matches \
+           matching/build_projection \
            serving/sync_facts_to_lakebase serving/reverse_sync_review_to_delta; do
     dbx workspace import "$NB_DIR/$(basename "$f")" --file "$ROOT/code/$f.py" \
       --language PYTHON --format SOURCE --overwrite
@@ -241,6 +243,20 @@ step_dashboard() {
   echo "Dashboard URL: ${host%/}/dashboardsv3/$DASHBOARD_ID/published"
 }
 
+# Demo: clear review state (Lakebase) so the decision strip starts at $0 validated, then
+# push the empty state to Delta so the dashboard + Genie agree.
+step_demo_reset() {
+  lakebase_conn
+  log "Clearing review_dispositions + normalized_assignments in $PGDATABASE"
+  psql -X -d "$PGDATABASE" -v ON_ERROR_STOP=1 -c "TRUNCATE review_dispositions, normalized_assignments"
+  step_sync
+}
+
+# v2: 3D projection of gold_part_features (global sample + per-block). Run 'sync app' after.
+step_projection() {
+  run_notebook build_projection "$UC_PARAMS"
+}
+
 step_vector_search() {
   [[ -n "${VS_ENDPOINT:-}" ]] || { echo "Set VS_ENDPOINT in deploy/config.env" >&2; exit 1; }
   if ! dbx vector-search-endpoints get-endpoint "$VS_ENDPOINT" >/dev/null 2>&1; then
@@ -260,14 +276,14 @@ step_vector_search() {
   fi
 }
 
-ALL_STEPS=(notebooks data lakebase app-setup sync genie app dashboard)
+ALL_STEPS=(notebooks data lakebase app-setup vector-search projection sync genie app dashboard)
 
 [[ $# -gt 0 ]] || { sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 [[ "$1" == "all" ]] && set -- "${ALL_STEPS[@]}"
 
 for step in "$@"; do
   case "$step" in
-    notebooks|data|lakebase|app-setup|sync|genie|app|dashboard|vector-search)
+    notebooks|data|lakebase|app-setup|sync|genie|app|dashboard|vector-search|projection|demo-reset)
       "step_${step//-/_}" ;;
     *) echo "Unknown step: $step" >&2; exit 1 ;;
   esac

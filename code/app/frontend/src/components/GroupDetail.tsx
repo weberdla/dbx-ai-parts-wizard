@@ -7,6 +7,7 @@ interface Props {
   onClose: () => void;
   onChanged: () => void;
   toast: (msg: string) => void;
+  onShowOnMap?: (groupId: string) => void;
 }
 
 const money = (n: number | null | undefined, cur = 'USD') =>
@@ -14,7 +15,7 @@ const money = (n: number | null | undefined, cur = 'USD') =>
 
 const DISPOSITIONS = ['reviewed', 'consolidated', 'dismissed'];
 
-export default function GroupDetail({ groupId, onClose, onChanged, toast }: Props) {
+export default function GroupDetail({ groupId, onClose, onChanged, toast, onShowOnMap }: Props) {
   const [data, setData] = useState<GroupDetailResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [dispNotes, setDispNotes] = useState('');
@@ -79,6 +80,11 @@ export default function GroupDetail({ groupId, onClose, onChanged, toast }: Prop
             </h2>
             <div className="gid">{groupId}</div>
           </div>
+          {onShowOnMap && (
+            <button className="drawer-map" onClick={() => onShowOnMap(groupId)} title="Show this group on the Similarity Map">
+              ◎ Show on map
+            </button>
+          )}
           <button className="close" onClick={onClose}>
             ×
           </button>
