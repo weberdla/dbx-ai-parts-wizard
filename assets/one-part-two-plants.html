@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>One Part, Two Plants</title>
+<meta name="description" content="Animated explainer for the AI Parts Wizard: two tractor plants buy the same part under different numbers; AI matches it, a person approves it, it gets one enterprise part number, and savings add up.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap">
+<style>
+/* Layout: a drawing-sheet stage. Plant | AI match + review | plant, with a savings bar across the bottom.
+   Step rail and running totals above, approved-match ledger below. Palette follows the app (code/app/frontend). */
+:root {
+  --bg: #f4f6f8;
+  --panel: #ffffff;
+  --panel-2: #f9fafb;
+  --ink: #1b2733;
+  --muted: #5a6b7b;
+  --line: #e2e8ee;
+  --rule: #c5cfd9;
+  --grid: #edf1f4;
+  --track: #e6ebf0;
+  --accent: #ff3621;
+  --accent-ink: #c4280f;
+  --accent-soft: #fff0ed;
+  --accent-line: #ffc6bc;
+  --on-accent: #ffffff;
+  --east: #1c8ad6;
+  --east-soft: #e6f1fa;
+  --west: #0f9d8f;
+  --west-soft: #e1f4f1;
+  --gain: #2f8a4c;
+  --gain-soft: #e4f3e9;
+  --chassis: #2b3744;
+  --tire: #36444f;
+  --lug: #1d2731;
+  --rim: #a3b0bd;
+  --metal: #7e8c9a;
+  --glass: #d4e6f3;
+  --lamp: #f0b443;
+  --louver: rgba(255, 255, 255, .38);
+  --shadow: rgba(16, 24, 32, .18);
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1520; --panel: #121c28; --panel-2: #0f1822; --ink: #e6edf3; --muted: #8ea3b6;
+    --line: #233040; --rule: #3a4b5c; --grid: #16212d; --track: #1f2b38;
+    --accent: #ff4d30; --accent-ink: #ff8f78; --accent-soft: #2a1712; --accent-line: #6e2c20; --on-accent: #ffffff;
+    --east: #4cc3ff; --east-soft: #0f2536; --west: #5ad1c8; --west-soft: #0e2827;
+    --gain: #4ade80; --gain-soft: #0f271a;
+    --chassis: #3b4b5b; --tire: #2b3946; --lug: #1a2530; --rim: #7f91a3; --metal: #5c6e80;
+    --glass: #1a3145; --lamp: #ffcf5c; --louver: rgba(8, 14, 20, .3); --shadow: rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1520; --panel: #121c28; --panel-2: #0f1822; --ink: #e6edf3; --muted: #8ea3b6;
+  --line: #233040; --rule: #3a4b5c; --grid: #16212d; --track: #1f2b38;
+  --accent: #ff4d30; --accent-ink: #ff8f78; --accent-soft: #2a1712; --accent-line: #6e2c20; --on-accent: #ffffff;
+  --east: #4cc3ff; --east-soft: #0f2536; --west: #5ad1c8; --west-soft: #0e2827;
+  --gain: #4ade80; --gain-soft: #0f271a;
+  --chassis: #3b4b5b; --tire: #2b3946; --lug: #1a2530; --rim: #7f91a3; --metal: #5c6e80;
+  --glass: #1a3145; --lamp: #ffcf5c; --louver: rgba(8, 14, 20, .3); --shadow: rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+/* Laid out but not shown yet: keeps the space reserved so nothing around it moves when it appears. */
+.is-pending { visibility: hidden; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+p { margin: 0; }
+.mono { font-family: var(--font-mono); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-block: 36px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 22px;
+}
+
+/* ---------- Header + running totals ---------- */
+.top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 20px 48px;
+  align-items: end;
+}
+.eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+  font: 600 12px/1 var(--font-body);
+  letter-spacing: .09em; text-transform: uppercase; color: var(--muted);
+}
+.eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--accent); }
+h1 {
+  margin: 0 0 12px;
+  font: 600 clamp(34px, 4.8vw, 52px)/1 var(--font-display);
+  letter-spacing: -.005em;
+  text-wrap: balance;
+}
+.lede { max-width: 64ch; color: var(--muted); font-size: 16px; line-height: 1.55; }
+
+.score { justify-self: end; display: grid; gap: 6px; text-align: right; }
+.score-label {
+  font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted);
+}
+.score-big {
+  font: 600 clamp(44px, 5.4vw, 64px)/1 var(--font-display);
+  color: var(--gain);
+  font-variant-numeric: tabular-nums;
+}
+.score-amt { display: inline-block; transform-origin: right center; }
+.score-amt.bump { animation: bump .6s cubic-bezier(.2, 1.3, .4, 1); }
+.score-big small { font-size: .34em; font-weight: 500; color: var(--muted); margin-left: 4px; }
+.score-stats { display: flex; justify-content: flex-end; gap: 22px; margin-top: 6px; }
+.stat { display: grid; gap: 2px; }
+.stat b { font: 600 24px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+
+/* ---------- Step rail ---------- */
+.steps {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px;
+}
+.step {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-content: start;
+  padding-top: 12px;
+  border-top: 3px solid var(--line);
+  transition: border-color .3s;
+}
+.step-n {
+  grid-row: span 2;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 500 13px/1 var(--font-mono);
+  color: var(--muted); background: var(--panel); border: 1.5px solid var(--rule);
+  transition: background .3s, border-color .3s, color .3s;
+}
+.step-t { font: 600 16px/1.2 var(--font-display); letter-spacing: .01em; }
+.step-d { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.step.is-done { border-top-color: var(--rule); }
+.step.is-done .step-n { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+.step.is-active { border-top-color: var(--accent); }
+.step.is-active .step-n { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* ---------- Stage ---------- */
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.22fr) minmax(0, 1fr);
+  grid-template-areas: "east engine west" "value value value";
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--panel);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.plant {
+  --plant: var(--east); --plant-soft: var(--east-soft);
+  grid-area: east;
+  min-width: 0;
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.plant--west { --plant: var(--west); --plant-soft: var(--west-soft); grid-area: west; }
+.plant-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.plant-id {
+  flex: none;
+  font: 500 12px/1 var(--font-mono);
+  color: var(--plant); background: var(--plant-soft);
+  border: 1px solid var(--plant); border-radius: 6px; padding: 5px 7px;
+}
+.plant-head h2 { margin: 0; font: 600 21px/1.1 var(--font-display); }
+.plant-head p { margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+
+.tractor-wrap { flex: 1; display: grid; align-items: end; padding-top: 6px; }
+.tractor { display: block; width: 100%; height: auto; max-height: 250px; overflow: visible; }
+.t-ground { stroke: var(--rule); stroke-width: 2; stroke-dasharray: 2 6; stroke-linecap: round; }
+.t-body { fill: var(--plant); }
+.t-body-2 { fill: var(--plant); fill-opacity: .78; }
+.t-dark { fill: var(--chassis); }
+.t-tire { fill: var(--tire); stroke: var(--lug); stroke-width: 5; stroke-dasharray: 5 6; }
+.t-rim { fill: var(--rim); }
+.t-hub { fill: var(--chassis); }
+.t-glass { fill: var(--glass); stroke: var(--plant); stroke-width: 5; stroke-linejoin: round; }
+.t-pillar { stroke: var(--plant); stroke-width: 4; }
+.t-metal { fill: none; stroke: var(--metal); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.t-fender { fill: none; stroke: var(--plant); stroke-width: 9; stroke-linecap: round; }
+.t-stroke { fill: none; stroke: var(--chassis); stroke-width: 4; stroke-linecap: round; }
+.t-stroke--thick { stroke-width: 5; }
+.t-lamp { fill: var(--lamp); }
+.t-louver { stroke: var(--louver); stroke-width: 2.5; stroke-linecap: round; }
+.is-live .hotspot { transition: transform .7s cubic-bezier(.2, .7, .2, 1); }
+.hs-ring {
+  fill: none; stroke: var(--accent); stroke-width: 2.5;
+  transform-box: fill-box; transform-origin: center;
+  animation: ping 1.6s ease-out infinite;
+}
+.hs-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+
+/* Part cards (one per plant) */
+.part-card {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px 12px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line); border-radius: 10px;
+  transition: border-color .4s, box-shadow .4s;
+}
+.part-card.is-in { animation: card-in .55s cubic-bezier(.2, .7, .2, 1); }
+.part-card.is-matched { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+.pc-icon {
+  width: 52px; height: 52px; border-radius: 8px;
+  display: grid; place-items: center;
+  color: var(--plant); background: var(--plant-soft);
+}
+.pc-icon .ico { width: 36px; height: 36px; }
+.pc-main { min-width: 0; }
+.pc-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+.pn { font: 500 15px/1.2 var(--font-mono); }
+.ent-tag {
+  display: inline-flex; align-items: center;
+  font: 500 12px/1 var(--font-mono);
+  color: var(--accent-ink); background: var(--accent-soft);
+  border: 1px solid var(--accent-line); border-radius: 999px; padding: 4px 8px;
+}
+.ent-tag.is-stamped, .link-label.is-stamped { animation: stamp .5s cubic-bezier(.2, 1.4, .4, 1); }
+.pc-title { margin-top: 4px; font-weight: 600; font-size: 14px; line-height: 1.3; }
+.pc-spec { font-size: 13px; line-height: 1.35; color: var(--muted); }
+.pc-facts {
+  grid-column: 1 / -1;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  margin: 0; padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.pc-facts div { min-width: 0; }
+.pc-facts dt { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.pc-facts dd {
+  margin: 3px 0 0;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px;
+  font: 500 14px/1.25 var(--font-mono); font-variant-numeric: tabular-nums;
+}
+.price-cur { display: inline-block; }
+/* Always on its own line (reserved even while hidden), so price length never changes the card height. */
+.price-old { flex-basis: 100%; font-size: 12px; color: var(--muted); }
+.price-new { color: var(--gain); }
+
+/* Engine column */
+.engine {
+  grid-area: engine;
+  min-width: 0;
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--panel-2);
+  border-inline: 1px solid var(--line);
+}
+.phase {
+  container-type: inline-size;
+  display: grid; gap: 10px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line); border-radius: 10px;
+  transition: opacity .35s, border-color .35s, box-shadow .35s;
+}
+.phase[data-state="idle"] { opacity: .5; }
+.phase[data-state="active"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.sec-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sec-n {
+  flex: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 500 12px/1 var(--font-mono);
+  color: var(--muted); background: var(--panel); border: 1.5px solid var(--rule);
+  transition: background .3s, border-color .3s, color .3s;
+}
+.phase[data-state="active"] > .sec-head .sec-n,
+.ent-field.is-active .sec-n { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.phase[data-state="done"] > .sec-head .sec-n,
+.ent-field.is-set .sec-n { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+.sec-title { font: 600 17px/1 var(--font-display); }
+.sec-meta {
+  margin-left: auto; min-width: 0; text-align: right;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 12px/1.25 var(--font-mono); color: var(--muted);
+}
+
+.tokens { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 10px; }
+.slot {
+  width: 44px; height: 44px; border-radius: 8px;
+  display: grid; place-items: center;
+  border: 1.5px dashed var(--rule);
+}
+.slot .ico { width: 30px; height: 30px; }
+.slot--east.is-filled { border: 1.5px solid var(--east); background: var(--east-soft); color: var(--east); }
+.slot--west.is-filled { border: 1.5px solid var(--west); background: var(--west-soft); color: var(--west); }
+.link {
+  position: relative; height: 2px;
+  background-image: linear-gradient(90deg, var(--rule) 50%, transparent 50%);
+  background-size: 10px 2px;
+}
+.link.is-scanning { animation: scan .6s linear infinite; }
+.link.is-matched { background: var(--accent); animation: none; }
+.link-label {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+  padding: 3px 9px; border-radius: 999px;
+  font: 500 12px/1.2 var(--font-mono); color: var(--muted); white-space: nowrap;
+  background: var(--panel); border: 1px solid var(--line);
+}
+.link.is-matched .link-label { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-line); }
+
+.compare { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.compare th {
+  padding: 0 0 5px 8px; text-align: right;
+  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+}
+.compare th:first-child { padding-left: 0; text-align: left; }
+.compare th.e { color: var(--east); }
+.compare th.w { color: var(--west); }
+.compare td { height: 27px; padding: 3px 0 3px 8px; text-align: right; white-space: nowrap; border-top: 1px solid var(--line); }
+.compare td:first-child { padding-left: 0; text-align: left; }
+@container (max-width: 300px) { .compare .u { display: none; } }
+.compare td.v { font-family: var(--font-mono); }
+.compare td.vd { width: 62px; font-size: 12px; }
+.compare .u { margin-left: 5px; font-size: 11.5px; color: var(--muted); }
+.compare tbody tr { transition: opacity .3s; }
+.compare tbody tr.is-dim { opacity: .28; }
+.same { color: var(--gain); font-weight: 600; }
+.delta { color: var(--muted); }
+
+.meter { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding-top: 14px; }
+.meter-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.meter-track { position: relative; height: 8px; border-radius: 4px; background: var(--track); }
+.meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 4px; background: var(--accent); }
+.meter-tick { position: absolute; left: 90%; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); }
+.meter-tick span {
+  position: absolute; bottom: calc(100% + 2px); left: 50%; translate: -50% 0;
+  font-size: 10.5px; color: var(--muted); white-space: nowrap;
+}
+.meter-val { min-width: 3.2ch; text-align: right; font: 500 15px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.caption { font-size: 12px; line-height: 1.4; color: var(--muted); }
+
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; font-size: 13.5px; }
+.checks li { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.tick {
+  flex: none; width: 18px; height: 18px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--rule);
+  transition: background .25s, border-color .25s;
+}
+.tick svg { width: 11px; height: 11px; fill: none; stroke: var(--panel); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: opacity .2s; }
+.checks li.is-checked .tick { background: var(--gain); border-color: var(--gain); }
+.checks li.is-checked .tick svg { opacity: 1; }
+
+.decide { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end; gap: 10px; }
+.approve {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 12rem;
+  height: 38px; padding: 0 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  color: var(--panel); background: var(--ink);
+  user-select: none;
+  transition: transform .12s, background .25s;
+}
+.approve svg { display: none; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.approve.is-pressed { transform: scale(.94); }
+.approve.is-approved { background: var(--gain); }
+.approve.is-approved svg { display: block; }
+.ent-field { display: grid; gap: 5px; min-width: 0; }
+.ent-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+}
+.ent-label .sec-n { width: 18px; height: 18px; font-size: 11px; }
+.ent-value {
+  display: flex; align-items: center;
+  height: 38px; padding: 0 10px; min-width: 0; overflow: hidden; white-space: nowrap;
+  font: 500 14px/1 var(--font-mono);
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 8px;
+  transition: border-color .3s, background .3s, color .3s;
+}
+.ent-ph { font-weight: 400; color: var(--muted); }
+.caret { display: none; width: 1.5px; height: 18px; margin-left: 1px; background: var(--accent); }
+.ent-field.is-active .caret { display: block; animation: blink 1s steps(1) infinite; }
+.ent-field.is-set .ent-value { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent); }
+
+/* Savings bar */
+.valuebar {
+  grid-area: value;
+  margin: 0 20px 20px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 22px;
+  min-height: 64px;
+}
+.vb-idle { font-size: 13.5px; color: var(--muted); }
+.vb-detail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 22px; min-width: 0; }
+.vb-detail.is-in { animation: card-in .5s cubic-bezier(.2, .7, .2, 1); }
+.vb-move { font-size: 14px; }
+.vb-math { font-size: 14px; color: var(--muted); }
+.vb-total {
+  margin-left: auto;
+  font: 600 32px/1 var(--font-display); color: var(--gain);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.vb-total span { display: inline-block; }
+.vb-total small { margin-left: 3px; font-size: 14px; font-weight: 500; color: var(--muted); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px; border-radius: 8px;
+  font: 600 13px/1 var(--font-body); color: var(--ink);
+  background: var(--panel); border: 1px solid var(--rule);
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--ink); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn svg { width: 12px; height: 12px; fill: currentColor; }
+.progress { margin-left: auto; font: 13px var(--font-mono); color: var(--muted); }
+
+/* Ledger */
+.ledger { display: grid; gap: 10px; }
+.ledger-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.ledger-head h2 { margin: 0; font: 600 23px/1.1 var(--font-display); }
+.ledger-head p { font-size: 13px; color: var(--muted); }
+.table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.ledger-table { width: 100%; min-width: 700px; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.ledger-table th {
+  padding: 10px 14px; text-align: left; white-space: nowrap;
+  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+  background: var(--panel-2); border-bottom: 1px solid var(--line);
+}
+.ledger-table td { padding: 10px 14px; vertical-align: top; border-bottom: 1px solid var(--line); }
+.ledger-table tbody tr:last-child td { border-bottom: 0; }
+.ledger-table .r { text-align: right; }
+.ledger-table tr.is-new td { animation: row-in 1.8s ease-out; }
+.l-ent { font-family: var(--font-mono); font-weight: 500; color: var(--accent-ink); white-space: nowrap; }
+.l-part b { display: block; font-weight: 600; }
+.l-part span { font-size: 12.5px; color: var(--muted); }
+.l-pn { font-family: var(--font-mono); white-space: nowrap; }
+.l-best { font-family: var(--font-mono); white-space: nowrap; }
+.l-best span { color: var(--muted); }
+.l-sav { font-family: var(--font-mono); font-weight: 500; color: var(--gain); white-space: nowrap; }
+.dot { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 2px; vertical-align: 1px; }
+.dot--east { background: var(--east); }
+.dot--west { background: var(--west); }
+.empty td { padding: 22px 14px; text-align: center; color: var(--muted); }
+.note { max-width: 100ch; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+
+/* Part icons */
+.ico { display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ico .f { fill: currentColor; fill-opacity: .18; }
+.ico .s { fill: currentColor; stroke: none; }
+.ico .t { stroke-opacity: .55; }
+.ico .tube { stroke-width: 6.5; stroke-opacity: .3; }
+
+/* Flying copies */
+.flyer { position: fixed; z-index: 50; margin: 0; display: grid; place-items: center; pointer-events: none; }
+.flyer--icon { border-radius: 8px; color: var(--plant); background: var(--plant-soft); box-shadow: 0 8px 22px var(--shadow); }
+.flyer--icon .ico { width: 70%; height: 70%; }
+.flyer--east { --plant: var(--east); --plant-soft: var(--east-soft); }
+.flyer--west { --plant: var(--west); --plant-soft: var(--west-soft); }
+.flyer--money { font: 600 32px/1 var(--font-display); color: var(--gain); white-space: nowrap; }
+
+@keyframes ping { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes card-in { from { transform: translateY(6px); opacity: .35; } to { transform: none; opacity: 1; } }
+@keyframes stamp { 0% { scale: 1.5; opacity: 0; } 60% { scale: .94; opacity: 1; } 100% { scale: 1; opacity: 1; } }
+@keyframes scan { to { background-position: 10px 0; } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.07); } 100% { transform: scale(1); } }
+@keyframes row-in { from { background: var(--accent-soft); } to { background: transparent; } }
+
+/* ---------- Responsive ---------- */
+/* Three columns: the engine column sets the row height, so card text stays on one line
+   to keep every card (and the tractor sitting on it) the same height from part to part. */
+@media (min-width: 1161px) {
+  .pc-title, .pc-spec { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (max-width: 1160px) {
+  .stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "east west" "engine engine" "value value"; }
+  .plant--east { border-right: 1px solid var(--line); }
+  .engine { border-inline: 0; border-top: 1px solid var(--line); }
+  .valuebar { margin-top: 0; }
+}
+@media (max-width: 860px) {
+  .top { grid-template-columns: minmax(0, 1fr); }
+  .score { justify-self: start; text-align: left; }
+  .score-amt { transform-origin: left center; }
+  .score-stats { justify-content: flex-start; }
+  .steps { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .step { padding: 6px 0 6px 12px; border-top: 0; border-left: 3px solid var(--line); }
+  .step.is-done { border-left-color: var(--rule); }
+  .step.is-active { border-left-color: var(--accent); }
+  .step-d { display: none; }
+}
+@media (max-width: 600px) {
+  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "east" "west" "engine" "value"; }
+  .plant--east { border-right: 0; border-bottom: 1px solid var(--line); }
+  .plant, .engine { padding: 16px; }
+  .valuebar { margin: 0 16px 16px; grid-template-columns: minmax(0, 1fr); }
+  .vb-total { margin-left: 0; }
+  .decide { grid-template-columns: minmax(0, 1fr); }
+  .approve { justify-self: start; }
+  .progress { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .hs-ring { opacity: .7; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <div>
+      <p class="eyebrow">AI Parts Wizard</p>
+      <h1>One part, two plants</h1>
+      <p class="lede">East and West Tractor Works build different tractors, but they often buy the same physical part under different part numbers, from different suppliers, at different prices. The AI Parts Wizard finds those matches. A person approves each one and gives it a single enterprise part number, and both plants buy at the better price.</p>
+    </div>
+    <aside class="score" aria-label="Running totals">
+      <p class="score-label">Validated savings</p>
+      <p class="score-big"><span class="score-amt" id="score-amt">$0</span><small>/ yr</small></p>
+      <div class="score-stats">
+        <p class="stat"><b id="stat-groups">0</b><span>matches approved</span></p>
+        <p class="stat"><b id="stat-parts">0</b><span>parts on an enterprise number</span></p>
+      </div>
+    </aside>
+  </header>
+
+  <ol class="steps" aria-label="How a match moves through the AI Parts Wizard">
+    <li class="step"><span class="step-n">1</span><span class="step-t">Two part numbers</span><span class="step-d">Each plant buys the same part under its own number.</span></li>
+    <li class="step"><span class="step-n">2</span><span class="step-t">AI finds the match</span><span class="step-d">Specs are compared within one category and material.</span></li>
+    <li class="step"><span class="step-n">3</span><span class="step-t">A person reviews</span><span class="step-d">An engineer confirms the parts are interchangeable.</span></li>
+    <li class="step"><span class="step-n">4</span><span class="step-t">One enterprise number</span><span class="step-d">Both parts are tagged with a shared ENT number.</span></li>
+    <li class="step"><span class="step-n">5</span><span class="step-t">Savings booked</span><span class="step-d">Both plants buy at the lowest price in the group.</span></li>
+  </ol>
+
+  <section class="stage" id="stage" aria-label="Animated walkthrough of one match">
+
+    <!-- East plant -->
+    <article class="plant plant--east">
+      <header class="plant-head">
+        <span class="plant-id">TR0</span>
+        <div><h2>East Tractor Works</h2><p>Builds the Tractor Field v2 · TR0_M001</p></div>
+      </header>
+      <div class="tractor-wrap">
+        <svg class="tractor" viewBox="0 0 320 190" role="img" aria-label="Tractor Field v2: an open-station utility tractor with a roll bar">
+          <line class="t-ground" x1="6" y1="183" x2="314" y2="183"/>
+          <path class="t-metal" d="M244 112V30h24v82"/>
+          <rect class="t-dark" x="56" y="122" width="160" height="14" rx="3"/>
+          <path class="t-body-2" d="M148 130V92l28-8v46z"/>
+          <path class="t-stroke" d="M170 88l14-22"/>
+          <path class="t-stroke t-stroke--thick" d="M175 62l20 7"/>
+          <rect class="t-dark" x="214" y="78" width="6" height="10"/>
+          <rect class="t-dark" x="204" y="72" width="28" height="7" rx="2"/>
+          <rect class="t-dark" x="228" y="48" width="7" height="30" rx="3"/>
+          <path class="t-body" d="M40 98l110-6v40l-110 2z"/>
+          <path class="t-louver" d="M64 108h58M64 116h58M64 124h58"/>
+          <rect class="t-dark" x="116" y="62" width="6" height="32" rx="2"/>
+          <rect class="t-dark" x="34" y="98" width="9" height="36" rx="2"/>
+          <circle class="t-lamp" cx="46" cy="104" r="3.5"/>
+          <circle class="t-tire" cx="226" cy="138" r="42"/>
+          <circle class="t-rim" cx="226" cy="138" r="26"/>
+          <circle class="t-hub" cx="226" cy="138" r="8"/>
+          <path class="t-fender" d="M176 138a50 50 0 0 1 100 0"/>
+          <path class="t-stroke" d="M268 146l28 6M268 160l28-8"/>
+          <circle class="t-hub" cx="296" cy="152" r="4"/>
+          <circle class="t-tire" cx="78" cy="160" r="21"/>
+          <circle class="t-rim" cx="78" cy="160" r="12"/>
+          <circle class="t-hub" cx="78" cy="160" r="4.5"/>
+          <g class="hotspot" id="hs-east"><circle class="hs-ring" r="12"/><circle class="hs-dot" r="5"/></g>
+        </svg>
+      </div>
+      <div class="part-card" id="card-east">
+        <div class="pc-icon"></div>
+        <div class="pc-main">
+          <div class="pc-top"><span class="pn"></span><span class="ent-tag is-pending"></span></div>
+          <p class="pc-title"></p>
+          <p class="pc-spec"></p>
+        </div>
+        <dl class="pc-facts">
+          <div><dt>Supplier</dt><dd data-f="sup"></dd></div>
+          <div><dt>Unit price</dt><dd><span class="price-cur" data-f="price"></span><s class="price-old is-pending" data-f="was"></s></dd></div>
+          <div><dt>Volume</dt><dd data-f="vol"></dd></div>
+        </dl>
+      </div>
+    </article>
+
+    <!-- AI match + human review -->
+    <div class="engine">
+      <section class="phase" id="sec-match" data-state="idle" aria-label="Step 2: AI match">
+        <div class="sec-head"><span class="sec-n">2</span><span class="sec-title">AI match</span><span class="sec-meta" id="block-label"></span></div>
+        <div class="tokens">
+          <div class="slot slot--east" id="slot-east"></div>
+          <div class="link" id="link"><span class="link-label" id="link-label">searching</span></div>
+          <div class="slot slot--west" id="slot-west"></div>
+        </div>
+        <table class="compare">
+          <thead><tr><th scope="col">Attribute</th><th scope="col" class="e">East</th><th scope="col" class="w">West</th><th scope="col"><span class="sr">Result</span></th></tr></thead>
+          <tbody id="compare-body">
+            <tr><td></td><td class="v"></td><td class="v"></td><td class="vd"></td></tr>
+            <tr><td></td><td class="v"></td><td class="v"></td><td class="vd"></td></tr>
+            <tr><td></td><td class="v"></td><td class="v"></td><td class="vd"></td></tr>
+            <tr><td></td><td class="v"></td><td class="v"></td><td class="vd"></td></tr>
+          </tbody>
+        </table>
+        <div class="meter">
+          <span class="meter-label">Similarity</span>
+          <div class="meter-track"><div class="meter-fill" id="meter-fill"></div><div class="meter-tick"><span>threshold</span></div></div>
+          <span class="meter-val" id="meter-val">0.00</span>
+        </div>
+        <p class="caption">Each part becomes a 21-value feature vector. Only parts in the same category and material are compared.</p>
+      </section>
+
+      <section class="phase" id="sec-review" data-state="idle" aria-label="Steps 3 and 4: human review and enterprise part number">
+        <div class="sec-head"><span class="sec-n">3</span><span class="sec-title">Human review</span><span class="sec-meta">Procurement engineer</span></div>
+        <ul class="checks" id="checks">
+          <li><span class="tick"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.4 2.4 4.6-5"/></svg></span><span></span></li>
+          <li><span class="tick"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.4 2.4 4.6-5"/></svg></span><span></span></li>
+          <li><span class="tick"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.4 2.4 4.6-5"/></svg></span><span></span></li>
+        </ul>
+        <div class="decide">
+          <div class="approve" id="approve"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.4 2.4 4.6-5"/></svg><span id="approve-text">Approve consolidation</span></div>
+          <div class="ent-field" id="ent-field">
+            <span class="ent-label"><span class="sec-n">4</span>Enterprise part number</span>
+            <div class="ent-value"><span id="ent-text"></span><span class="ent-ph" id="ent-ph">e.g. ENT-000123</span><span class="caret"></span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- West plant -->
+    <article class="plant plant--west">
+      <header class="plant-head">
+        <span class="plant-id">TR1</span>
+        <div><h2>West Tractor Works</h2><p>Builds the Tractor Ranger v3 · TR1_M002</p></div>
+      </header>
+      <div class="tractor-wrap">
+        <svg class="tractor" viewBox="0 0 320 190" role="img" aria-label="Tractor Ranger v3: a row-crop tractor with an enclosed cab and front weights">
+          <line class="t-ground" x1="6" y1="183" x2="314" y2="183"/>
+          <path class="t-glass" d="M178 120l4-80h78l8 80z"/>
+          <path class="t-pillar" d="M221 40v80"/>
+          <rect class="t-dark" x="228" y="84" width="22" height="6" rx="2"/>
+          <rect class="t-dark" x="244" y="62" width="6" height="26" rx="3"/>
+          <path class="t-stroke" d="M200 96l10-18"/>
+          <path class="t-stroke t-stroke--thick" d="M203 75l16 6"/>
+          <rect class="t-body" x="170" y="30" width="106" height="11" rx="3"/>
+          <circle class="t-lamp" cx="172" cy="36" r="3.5"/>
+          <rect class="t-dark" x="44" y="122" width="180" height="14" rx="3"/>
+          <path class="t-body" d="M30 94l144-6v40l-144 2z"/>
+          <path class="t-louver" d="M56 104h86M56 112h86M56 120h86"/>
+          <rect class="t-dark" x="148" y="46" width="7" height="44" rx="2"/>
+          <rect class="t-dark" x="146" y="42" width="11" height="6" rx="2"/>
+          <rect class="t-dark" x="25" y="94" width="8" height="36" rx="2"/>
+          <rect class="t-dark" x="10" y="108" width="17" height="26" rx="2"/>
+          <path class="t-louver" d="M10 116.5h17M10 125h17"/>
+          <circle class="t-tire" cx="232" cy="130" r="50"/>
+          <circle class="t-rim" cx="232" cy="130" r="30"/>
+          <circle class="t-hub" cx="232" cy="130" r="9"/>
+          <path class="t-fender" d="M174 130a58 58 0 0 1 116 0"/>
+          <path class="t-stroke" d="M282 146l24 8M282 162l24-8"/>
+          <circle class="t-hub" cx="306" cy="154" r="4"/>
+          <circle class="t-tire" cx="72" cy="155" r="25.5"/>
+          <circle class="t-rim" cx="72" cy="155" r="15"/>
+          <circle class="t-hub" cx="72" cy="155" r="5"/>
+          <g class="hotspot" id="hs-west"><circle class="hs-ring" r="12"/><circle class="hs-dot" r="5"/></g>
+        </svg>
+      </div>
+      <div class="part-card" id="card-west">
+        <div class="pc-icon"></div>
+        <div class="pc-main">
+          <div class="pc-top"><span class="pn"></span><span class="ent-tag is-pending"></span></div>
+          <p class="pc-title"></p>
+          <p class="pc-spec"></p>
+        </div>
+        <dl class="pc-facts">
+          <div><dt>Supplier</dt><dd data-f="sup"></dd></div>
+          <div><dt>Unit price</dt><dd><span class="price-cur" data-f="price"></span><s class="price-old is-pending" data-f="was"></s></dd></div>
+          <div><dt>Volume</dt><dd data-f="vol"></dd></div>
+        </dl>
+      </div>
+    </article>
+
+    <!-- Savings -->
+    <section class="phase valuebar" id="valuebar" data-state="idle" aria-label="Step 5: savings">
+      <div class="sec-head"><span class="sec-n">5</span><span class="sec-title">Savings booked</span></div>
+      <p class="vb-idle" id="vb-idle">Once the match is approved, the price gap becomes annual savings.</p>
+      <div class="vb-detail" id="vb-detail" hidden>
+        <p class="vb-move"><span id="vb-who"></span> moves to <b class="mono" id="vb-offer"></b></p>
+        <p class="vb-math mono" id="vb-math"></p>
+        <p class="vb-total"><span id="vb-amt"></span><small>/ yr</small></p>
+      </div>
+    </section>
+  </section>
+
+  <div class="controls">
+    <button class="btn" id="btn-pause" type="button" aria-pressed="false"><svg viewBox="0 0 12 12" aria-hidden="true" id="pause-icon"><rect x="2" y="1.5" width="3" height="9" rx="1"/><rect x="7" y="1.5" width="3" height="9" rx="1"/></svg><span id="pause-label">Pause</span></button>
+    <button class="btn" id="btn-next" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.8v8.4L7.3 6zM8.2 1.5h2.3v9H8.2z"/></svg>Next part</button>
+    <span class="progress" id="progress"></span>
+  </div>
+
+  <section class="ledger" aria-labelledby="ledger-title">
+    <div class="ledger-head">
+      <h2 id="ledger-title">Approved matches</h2>
+      <p>Newest first. Each row is one match group on its new enterprise part number.</p>
+    </div>
+    <div class="table-wrap">
+      <table class="ledger-table">
+        <thead><tr><th scope="col">Enterprise no.</th><th scope="col">Part</th><th scope="col">East · TR0</th><th scope="col">West · TR1</th><th scope="col" class="r">Best offer</th><th scope="col" class="r">Savings / yr</th></tr></thead>
+        <tbody id="ledger-body"><tr class="empty"><td colspan="6">Approved matches land here with their enterprise part number.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="note">Example values. Part numbers, supplier ids, attributes and prices follow the patterns in the project's synthetic catalog, and savings use the matcher's formula: the price gap to the group's best offer times the annual volume of the pricier part. The full demo catalog has about 200K parts across four plants and about 25K match groups, worth roughly $36M a year.</p>
+  <p class="sr" aria-live="polite" id="live"></p>
+</main>
+
+<script>
+(() => {
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const SIDES = ['east', 'west'];
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const num = (v, d = 0) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const money = v => '$' + num(v, 2);
+  const usd = v => '$' + num(Math.round(v), 0);
+
+  /* ---------- Part icons (48×48) ---------- */
+  const BALLS = [[37.5, 24], [33.55, 33.55], [24, 37.5], [14.45, 33.55], [10.5, 24], [14.45, 14.45], [24, 10.5], [33.55, 14.45]]
+    .map(([x, y]) => `<circle class="s" cx="${x}" cy="${y}" r="2.4"/>`).join('');
+  const ICONS = {
+    bolt: '<path class="f" d="M5 14h11v20H5z"/><path d="M5 20.5h11M5 27.5h11"/><path class="f" d="M16 19h24l3 2.5v5L40 29H16z"/><path class="t" d="M24 19l-2 10M28 19l-2 10M32 19l-2 10M36 19l-2 10"/>',
+    pin: '<path class="f" d="M5 19h33l4 3v4l-4 3H5z"/><path d="M33 19v10M38 19v10"/><circle cx="11" cy="24" r="2"/>',
+    hose: '<path class="tube" d="M11 36C11 20 37 28 37 12"/><path class="t" d="M11 36C11 20 37 28 37 12" stroke-dasharray="2 3"/><path class="f" d="M7 36h8v7H7zM33 5h8v7h-8z"/>',
+    bearing: '<path class="f" fill-rule="evenodd" d="M5 24a19 19 0 1 0 38 0a19 19 0 1 0-38 0zM8 24a16 16 0 1 0 32 0a16 16 0 1 0-32 0z"/><path class="f" fill-rule="evenodd" d="M13 24a11 11 0 1 0 22 0a11 11 0 1 0-22 0zM16 24a8 8 0 1 0 16 0a8 8 0 1 0-16 0z"/>' + BALLS,
+    gasket: '<path class="f" fill-rule="evenodd" d="M5 24a19 19 0 1 0 38 0a19 19 0 1 0-38 0zM14 24a10 10 0 1 0 20 0a10 10 0 1 0-20 0z"/><circle cx="38.5" cy="24" r="1.8"/><circle cx="9.5" cy="24" r="1.8"/><circle cx="24" cy="9.5" r="1.8"/><circle cx="24" cy="38.5" r="1.8"/>',
+    bracket: '<path class="f" d="M7 6h11v25h23v11H7z"/><circle cx="12.5" cy="13" r="2"/><circle cx="12.5" cy="22" r="2"/><circle cx="28" cy="36.5" r="2"/><circle cx="36" cy="36.5" r="2"/>',
+    wire: '<path d="M5 33c5-14 11-14 14-4s9 10 13-2" stroke-width="3.2"/><path class="f" d="M32 21h10v12H32z"/><path d="M42 24.5h3M42 29.5h3"/>',
+    seal: '<path class="f" fill-rule="evenodd" d="M5.5 24a18.5 18.5 0 1 0 37 0a18.5 18.5 0 1 0-37 0zM12.5 24a11.5 11.5 0 1 0 23 0a11.5 11.5 0 1 0-23 0z"/><path class="t" d="M13 16a14 14 0 0 1 8-5"/>'
+  };
+  const icon = k => `<svg class="ico" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${ICONS[k]}</svg>`;
+
+  /* ---------- Plants, hotspots on each tractor drawing, and example parts ---------- */
+  const PLANTS = {
+    east: { id: 'TR0', name: 'East Tractor Works', model: 'Field v2' },
+    west: { id: 'TR1', name: 'West Tractor Works', model: 'Ranger v3' }
+  };
+  const SPOTS = {
+    east: { bolt: [226, 138], pin: [296, 152], hose: [162, 110], bearing: [78, 160], gasket: [96, 114], bracket: [244, 86], wire: [46, 104], seal: [140, 130] },
+    west: { bolt: [232, 130], pin: [306, 154], hose: [166, 108], bearing: [72, 155], gasket: [100, 110], bracket: [180, 116], wire: [172, 36], seal: [140, 129] }
+  };
+  const buy = (pn, sup, price, vol) => ({ pn, sup, price, vol });
+  // attrs: [label, unit, east value, west value, decimals]
+  const PARTS = [
+    { cat: 'Bolt', material: 'Alloy Steel', name: 'Alloy steel bolt', icon: 'bolt',
+      attrs: [['Diameter', 'mm', 12, 12, 1], ['Length', 'mm', 40, 40.2, 1], ['Thread pitch', 'mm', 1.75, 1.75, 2], ['Tensile strength', 'MPa', 880, 880, 0]],
+      spec: v => `M${v[0]} × ${v[1]} mm · pitch ${v[2]}`,
+      east: buy('BLT-04216', 'S047', 1.18, 1620), west: buy('BLT-13872', 'S131', 1.52, 1840), sim: 0.99 },
+    { cat: 'Pin/Shaft', material: 'Steel', name: 'Steel hitch pin', icon: 'pin',
+      attrs: [['Diameter', 'mm', 22, 22, 1], ['Length', 'mm', 95, 95.5, 1], ['Hardness', 'HRC', 45, 45, 0]],
+      spec: v => `Ø${v[0]} × ${v[1]} mm · ${v[2]} HRC`,
+      east: buy('PIN-07731', 'S012', 51.90, 310), west: buy('PIN-18205', 'S166', 38.40, 260), sim: 0.98 },
+    { cat: 'Hose', material: 'Rubber', name: 'Rubber hydraulic hose', icon: 'hose',
+      attrs: [['Inner diameter', 'mm', 12.5, 12.5, 1], ['Outer diameter', 'mm', 19, 19, 1], ['Length', 'mm', 1200, 1195, 0], ['Pressure rating', 'bar', 210, 210, 0]],
+      spec: v => `ID ${v[0]} × ${v[2]} mm · ${v[3]} bar`,
+      east: buy('HOS-02458', 'S088', 46.20, 180), west: buy('HOS-16630', 'S154', 61.75, 220), sim: 0.98 },
+    { cat: 'Bushing/Bearing', material: 'Bronze', name: 'Bronze axle bushing', icon: 'bearing',
+      attrs: [['Inner diameter', 'mm', 30, 30, 1], ['Outer diameter', 'mm', 42, 42.1, 1], ['Width', 'mm', 16, 16, 1], ['Load rating', 'kN', 28, 28, 1]],
+      spec: v => `ID ${v[0]} / OD ${v[1]} × ${v[2]} mm`,
+      east: buy('BSH-05119', 'S019', 72.30, 360), west: buy('BSH-11947', 'S177', 54.60, 340), sim: 0.99 },
+    { cat: 'Gasket', material: 'Graphite', name: 'Graphite manifold gasket', icon: 'gasket',
+      attrs: [['Inner diameter', 'mm', 64, 64, 1], ['Outer diameter', 'mm', 92, 92, 1], ['Thickness', 'mm', 1.5, 1.52, 2], ['Max temperature', '°C', 310, 310, 0]],
+      spec: v => `ID ${v[0]} / OD ${v[1]} × ${v[2]} mm`,
+      east: buy('GSK-09324', 'S063', 14.80, 900), west: buy('GSK-15508', 'S102', 19.40, 1050), sim: 0.97 },
+    { cat: 'Bracket/Plate', material: 'Steel', name: 'Steel mounting bracket', icon: 'bracket',
+      attrs: [['Length', 'mm', 160, 160, 1], ['Width', 'mm', 80, 80, 1], ['Thickness', 'mm', 6, 6, 1], ['Holes', '', 4, 4, 0]],
+      spec: v => `${v[0]} × ${v[1]} × ${v[2]} mm · ${v[3]} holes`,
+      east: buy('BRK-03390', 'S034', 149.50, 140), west: buy('BRK-12077', 'S149', 118.00, 120), sim: 0.99 },
+    { cat: 'Wire/Cable', material: 'Copper', name: 'Copper lighting cable', icon: 'wire',
+      attrs: [['Length', 'mm', 3000, 3000, 0], ['Gauge', 'mm²', 1.5, 1.5, 2], ['Voltage rating', 'V', 600, 600, 0], ['Conductors', '', 3, 3, 0]],
+      spec: v => `${v[1]} mm² · ${v[3]}-core · ${v[0]} mm`,
+      east: buy('WIR-06642', 'S071', 42.10, 210), west: buy('WIR-17359', 'S125', 55.80, 230), sim: 0.99 },
+    { cat: 'Seal/O-ring', material: 'Viton', name: 'Viton O-ring', icon: 'seal',
+      attrs: [['Inner diameter', 'mm', 24, 24, 1], ['Cross-section', 'mm', 2.5, 2.5, 2], ['Hardness', 'Shore A', 75, 75, 0]],
+      spec: v => `ID ${v[0]} × ${v[1]} mm · ${v[2]} Shore A`,
+      east: buy('SEL-08815', 'S051', 4.65, 1950), west: buy('SEL-19463', 'S118', 3.40, 1800), sim: 0.98 }
+  ];
+
+  function rng(seed) {
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // First lap uses the hand-written parts; later laps reuse the part types with new numbers, suppliers and prices.
+  function partFor(i) {
+    const base = PARTS[i % PARTS.length];
+    if (i < PARTS.length) return base;
+    const r = rng(i * 7919 + 104729);
+    const pre = base.east.pn.slice(0, 3);
+    const pn = () => `${pre}-${String(Math.floor(r() * 20000)).padStart(5, '0')}`;
+    const sup = () => 'S' + String(Math.floor(r() * 200)).padStart(3, '0');
+    const low = Math.round(Math.min(base.east.price, base.west.price) * (0.8 + r() * 0.5) * 100) / 100;
+    const high = Math.round(low * (1.15 + r() * 0.25) * 100) / 100;
+    const eastHigh = r() < 0.5;
+    const vol = v => Math.max(10, Math.round(v * (0.7 + r() * 0.7) / 10) * 10);
+    const se = sup();
+    let sw = sup();
+    while (sw === se) sw = sup();
+    return {
+      ...base,
+      east: buy(pn(), se, eastHigh ? high : low, vol(base.east.vol)),
+      west: buy(pn(), sw, eastHigh ? low : high, vol(base.west.vol)),
+      sim: Math.round((0.97 + r() * 0.025) * 100) / 100
+    };
+  }
+  const valuesFor = (p, side) => p.attrs.map(a => num(side === 'east' ? a[2] : a[3], a[4]));
+
+  /* ---------- Pausable, skippable clock ---------- */
+  const clock = { paused: false, skip: false };
+  const instant = () => clock.skip || reduced;
+  function frames(ms, onFrame) {
+    return new Promise(resolve => {
+      if (ms <= 0 || clock.skip) { if (onFrame) onFrame(1); resolve(); return; }
+      let acc = 0, last = performance.now();
+      const tick = now => {
+        if (!clock.paused) acc += Math.min(100, Math.max(0, now - last));
+        last = now;
+        if (clock.skip) acc = ms;
+        const t = Math.min(1, acc / ms);
+        if (onFrame) onFrame(t);
+        if (t >= 1) resolve(); else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+  const wait = ms => frames(ms);
+  const ease = t => 1 - Math.pow(1 - t, 3);
+
+  function fly(from, to, html, cls, dur) {
+    const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'flyer ' + cls;
+    el.innerHTML = html;
+    Object.assign(el.style, { left: a.left + 'px', top: a.top + 'px', width: a.width + 'px', height: a.height + 'px' });
+    document.body.appendChild(el);
+    const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+    const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+    const s = a.height ? b.height / a.height : 1;
+    const anim = el.animate(
+      [{ transform: 'translate(0px, 0px) scale(1)' }, { transform: `translate(${dx}px, ${dy}px) scale(${s})` }],
+      { duration: instant() ? 0 : dur, easing: 'cubic-bezier(.55, 0, .25, 1)', fill: 'forwards' }
+    );
+    return anim.finished.catch(() => {}).then(() => el.remove());
+  }
+  function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+  /* ---------- Elements ---------- */
+  const stage = $('#stage');
+  const steps = [...document.querySelectorAll('.step')];
+  const cards = {};
+  for (const s of SIDES) {
+    const root = $('#card-' + s);
+    cards[s] = {
+      root, icon: $('.pc-icon', root), pn: $('.pn', root), ent: $('.ent-tag', root),
+      title: $('.pc-title', root), spec: $('.pc-spec', root),
+      sup: $('[data-f="sup"]', root), price: $('[data-f="price"]', root), was: $('[data-f="was"]', root),
+      vol: $('[data-f="vol"]', root),
+      hs: $('#hs-' + s)
+    };
+  }
+  const slots = { east: $('#slot-east'), west: $('#slot-west') };
+  const secMatch = $('#sec-match'), secReview = $('#sec-review'), valueBar = $('#valuebar');
+  const blockLabel = $('#block-label'), link = $('#link'), linkLabel = $('#link-label');
+  const rows = [...$('#compare-body').children];
+  const meterFill = $('#meter-fill'), meterVal = $('#meter-val');
+  const checkItems = [...$('#checks').children];
+  const approve = $('#approve'), approveText = $('#approve-text');
+  const entField = $('#ent-field'), entText = $('#ent-text'), entPh = $('#ent-ph');
+  const vbIdle = $('#vb-idle'), vbDetail = $('#vb-detail');
+  const vbWho = $('#vb-who'), vbOffer = $('#vb-offer'), vbMath = $('#vb-math'), vbAmt = $('#vb-amt');
+  const scoreAmt = $('#score-amt'), statGroups = $('#stat-groups'), statParts = $('#stat-parts');
+  const ledgerBody = $('#ledger-body');
+  const live = $('#live'), progress = $('#progress');
+  const pauseBtn = $('#btn-pause'), pauseLabel = $('#pause-label'), pauseIcon = $('#pause-icon');
+  let ledgerEmpty = $('.empty', ledgerBody);
+  let total = 0, groups = 0;
+
+  /* ---------- Rendering ---------- */
+  function setStep(n) {
+    steps.forEach((li, k) => {
+      li.classList.toggle('is-active', k + 1 === n);
+      li.classList.toggle('is-done', k + 1 < n);
+      if (k + 1 === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
+  }
+
+  // Everything a card will show later in the cycle (ENT tag, struck-out old price) is laid out
+  // now and only revealed later, so the card never changes size mid-cycle.
+  function fillCards(p, ent, hi) {
+    const priceChars = Math.max(money(p.east.price).length, money(p.west.price).length);
+    for (const s of SIDES) {
+      const c = cards[s], d = p[s];
+      c.icon.innerHTML = icon(p.icon);
+      c.pn.textContent = d.pn;
+      c.ent.textContent = '→ ' + ent;
+      c.ent.classList.add('is-pending');
+      c.ent.classList.remove('is-stamped');
+      c.title.textContent = p.name;
+      c.title.title = p.name;
+      c.spec.textContent = p.spec(valuesFor(p, s));
+      c.spec.title = c.spec.textContent;
+      c.sup.textContent = d.sup;
+      c.price.textContent = money(d.price);
+      c.price.className = 'price-cur';
+      c.price.style.minWidth = priceChars + 'ch';
+      c.was.textContent = money(p[hi].price);
+      c.was.classList.add('is-pending');
+      c.vol.textContent = num(d.vol) + ' / yr';
+      c.root.classList.remove('is-matched');
+      const [x, y] = SPOTS[s][p.icon];
+      c.hs.style.transform = `translate(${x}px, ${y}px)`;
+      replay(c.root, 'is-in');
+    }
+  }
+
+  function resetEngine(p, lo) {
+    secMatch.dataset.state = 'idle';
+    secReview.dataset.state = 'idle';
+    valueBar.dataset.state = 'idle';
+    blockLabel.textContent = `${p.cat} · ${p.material}`;
+    for (const s of SIDES) { slots[s].innerHTML = ''; slots[s].classList.remove('is-filled'); }
+    link.className = 'link';
+    linkLabel.textContent = 'searching';
+    rows.forEach((tr, k) => {
+      const a = p.attrs[k];
+      const [n, e, w, v] = tr.children;
+      tr.classList.add('is-dim');
+      tr.style.visibility = a ? '' : 'hidden';
+      v.textContent = '';
+      v.className = 'vd';
+      if (!a) { n.textContent = e.textContent = w.textContent = ' '; return; }
+      n.innerHTML = a[0] + (a[1] ? `<span class="u">${a[1]}</span>` : '');
+      e.textContent = num(a[2], a[4]);
+      w.textContent = num(a[3], a[4]);
+    });
+    meterFill.style.width = '0%';
+    meterVal.textContent = '0.00';
+    const checks = [
+      'Geometry and material agree',
+      `Fits the ${PLANTS.east.model} (TR0) and ${PLANTS.west.model} (TR1)`,
+      `Best offer: ${p[lo].sup} at ${money(p[lo].price)}`
+    ];
+    checkItems.forEach((li, k) => { li.classList.remove('is-checked'); li.lastElementChild.textContent = checks[k]; });
+    approve.classList.remove('is-pressed', 'is-approved');
+    approveText.textContent = 'Approve consolidation';
+    entField.classList.remove('is-active', 'is-set');
+    entText.textContent = '';
+    entPh.hidden = false;
+    vbIdle.hidden = false;
+    vbDetail.hidden = true;
+  }
+
+  function revealRow(k, a) {
+    const tr = rows[k], v = tr.children[3];
+    const same = a[2] === a[3];
+    v.textContent = same ? 'same' : `Δ ${num(Math.abs(a[2] - a[3]), a[4])}`;
+    v.className = 'vd ' + (same ? 'same' : 'delta');
+    tr.classList.remove('is-dim');
+  }
+
+  function addLedger(p, ent, lo, sav) {
+    if (ledgerEmpty) { ledgerEmpty.remove(); ledgerEmpty = null; }
+    const tr = document.createElement('tr');
+    tr.className = 'is-new';
+    tr.innerHTML =
+      `<td class="l-ent">${ent}</td>` +
+      `<td class="l-part"><b>${p.name}</b><span>${p.cat} · ${p.material}</span></td>` +
+      `<td class="l-pn"><i class="dot dot--east"></i>${p.east.pn}</td>` +
+      `<td class="l-pn"><i class="dot dot--west"></i>${p.west.pn}</td>` +
+      `<td class="r l-best">${money(p[lo].price)} <span>${p[lo].sup}</span></td>` +
+      `<td class="r l-sav">${usd(sav)}</td>`;
+    ledgerBody.prepend(tr);
+    while (ledgerBody.children.length > 6) ledgerBody.lastElementChild.remove();
+  }
+
+  /* ---------- One full cycle for one part ---------- */
+  async function runPart(i) {
+    const p = partFor(i);
+    const ent = 'ENT-' + String(101 + i).padStart(6, '0');
+    const hi = p.east.price >= p.west.price ? 'east' : 'west';
+    const lo = hi === 'east' ? 'west' : 'east';
+    const sav = Math.round((p[hi].price - p[lo].price) * p[hi].vol);
+    progress.textContent = `Match ${i + 1} · ${p.cat}`;
+
+    // 1. The same part at two plants, under two numbers
+    setStep(1);
+    fillCards(p, ent, hi);
+    resetEngine(p, lo);
+    await wait(2200);
+
+    // 2. AI compares specs and scores the match
+    setStep(2);
+    secMatch.dataset.state = 'active';
+    link.classList.add('is-scanning');
+    await Promise.all(SIDES.map(s => fly(cards[s].icon, slots[s], icon(p.icon), `flyer--icon flyer--${s}`, 750)));
+    for (const s of SIDES) { slots[s].innerHTML = icon(p.icon); slots[s].classList.add('is-filled'); }
+    for (let k = 0; k < p.attrs.length; k++) { revealRow(k, p.attrs[k]); await wait(330); }
+    await frames(instant() ? 0 : 850, t => {
+      const v = p.sim * ease(t);
+      meterFill.style.width = (v * 100) + '%';
+      meterVal.textContent = v.toFixed(2);
+    });
+    link.classList.remove('is-scanning');
+    link.classList.add('is-matched');
+    linkLabel.textContent = `match · ${p.sim.toFixed(2)}`;
+    for (const s of SIDES) cards[s].root.classList.add('is-matched');
+    await wait(1100);
+
+    // 3. A person reviews and approves
+    secMatch.dataset.state = 'done';
+    setStep(3);
+    secReview.dataset.state = 'active';
+    for (const li of checkItems) { await wait(420); li.classList.add('is-checked'); }
+    await wait(500);
+    approve.classList.add('is-pressed');
+    await wait(160);
+    approve.classList.remove('is-pressed');
+    approve.classList.add('is-approved');
+    approveText.textContent = 'Approved';
+    await wait(650);
+
+    // 4. One enterprise part number for both
+    setStep(4);
+    entField.classList.add('is-active');
+    entPh.hidden = true;
+    for (let k = 1; k <= ent.length; k++) { entText.textContent = ent.slice(0, k); await wait(50); }
+    entField.classList.remove('is-active');
+    entField.classList.add('is-set');
+    await wait(250);
+    linkLabel.textContent = ent;
+    replay(linkLabel, 'is-stamped');
+    for (const s of SIDES) {
+      cards[s].ent.classList.remove('is-pending');
+      replay(cards[s].ent, 'is-stamped');
+    }
+    await wait(1200);
+
+    // 5. The pricier plant moves to the best offer; savings are booked
+    secReview.dataset.state = 'done';
+    setStep(5);
+    valueBar.dataset.state = 'active';
+    vbWho.textContent = PLANTS[hi].name;
+    vbOffer.textContent = `${p[lo].sup} at ${money(p[lo].price)}`;
+    vbMath.textContent = `(${money(p[hi].price)} − ${money(p[lo].price)}) × ${num(p[hi].vol)} / yr`;
+    vbAmt.textContent = usd(sav);
+    vbIdle.hidden = true;
+    vbDetail.hidden = false;
+    replay(vbDetail, 'is-in');
+    cards[hi].price.textContent = money(p[lo].price);
+    cards[hi].price.classList.add('price-new');
+    cards[hi].was.classList.remove('is-pending');
+    cards[hi].sup.innerHTML = `<span class="price-new">${p[lo].sup}</span>`;
+    await wait(1100);
+    await fly(vbAmt, scoreAmt, usd(sav), 'flyer--money', 800);
+    const from = total;
+    total += sav;
+    groups += 1;
+    replay(scoreAmt, 'bump');
+    statGroups.textContent = num(groups);
+    statParts.textContent = num(groups * 2);
+    addLedger(p, ent, lo, sav);
+    live.textContent = `${ent} assigned to ${p.east.pn} and ${p.west.pn}. ${usd(sav)} a year saved. Total ${usd(total)} a year.`;
+    await frames(instant() ? 0 : 900, t => { scoreAmt.textContent = usd(from + sav * ease(t)); });
+    await wait(1700);
+    valueBar.dataset.state = 'done';
+  }
+
+  async function loop() {
+    for (let i = 0; ; i++) {
+      await runPart(i);
+      clock.skip = false;
+    }
+  }
+
+  /* ---------- Controls ---------- */
+  const PAUSE_SVG = '<rect x="2" y="1.5" width="3" height="9" rx="1"/><rect x="7" y="1.5" width="3" height="9" rx="1"/>';
+  const PLAY_SVG = '<path d="M2.5 1.5v9l8-4.5z"/>';
+  const allAnimations = () => (document.getAnimations ? document.getAnimations() : []);
+
+  function setPaused(paused) {
+    clock.paused = paused;
+    for (const a of allAnimations()) {
+      try {
+        if (paused && a.playState === 'running') a.pause();
+        else if (!paused && a.playState === 'paused') a.play();
+      } catch (e) { /* ignore */ }
+    }
+    pauseBtn.setAttribute('aria-pressed', String(paused));
+    pauseLabel.textContent = paused ? 'Play' : 'Pause';
+    pauseIcon.innerHTML = paused ? PLAY_SVG : PAUSE_SVG;
+  }
+  function next() {
+    if (clock.skip) return;
+    clock.skip = true;
+    for (const a of allAnimations()) {
+      try {
+        const end = a.effect && a.effect.getComputedTiming().endTime;
+        if (Number.isFinite(end)) a.finish();
+      } catch (e) { /* ignore */ }
+    }
+  }
+  pauseBtn.addEventListener('click', () => setPaused(!clock.paused));
+  $('#btn-next').addEventListener('click', next);
+
+  loop();
+  requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.add('is-live')));
+})();
+</script>
+</body>
+</html>
